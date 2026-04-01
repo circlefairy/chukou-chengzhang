@@ -777,64 +777,64 @@ async function callAI(desc) {
   const styleInfo = styleMap[selectedStyle];
   let userText = styleInfo.prompt;
   if (desc) {
-    userText += `\n\n用户补充信息：${desc}\n请将用户的补充信息与图片画面结合，在文案中自然融入这些信息。`;
+    userText += '\n\n用户补充信息：' + desc + '\n请将用户的补充信息与图片画面结合，在文案中自然融入这些信息。';
   }
 
-  // 智谱 GLM-4V-Flash 不支持 system 角色，合并为 user 消息
-  const systemText = buildSystemPrompt();
-  const fullUserText = systemText + '\n\n' + userText;
+  // 智谱 GLM-4V-Flash 合并 system 为 user
+  const fullText = buildSystemPrompt() + '\n\n' + userText;
 
-  // 构建用户消息（含图片）
-  const userContent = [];
-  userContent.push({ type: 'text', text: fullUserText });
+  let messageContent;
+  const hasImage = currentFile && currentFileType === 'image';
 
-  if (currentFile && currentFileType === 'image') {
+  if (hasImage) {
     const base64 = await fileToCompressedBase64(currentFile);
-    userContent.push({
-      type: 'image_url',
-      image_url: { url: base64 }
-    });
+    // 多模态格式：content 为数组
+    messageContent = [
+      { type: 'text', text: fullText },
+      { type: 'image_url', image_url: { url: base64 } }
+    ];
+  } else {
+    // 纯文本格式：content 为字符串
+    messageContent = fullText;
   }
-
-  const messages = [
-    { role: 'user', content: userContent }
-  ];
 
   const reqBody = JSON.stringify({
     model: CONFIG.model,
-    messages: messages,
+    messages: [
+      { role: 'user', content: messageContent }
+    ],
     max_tokens: 1500,
     temperature: 0.9
   });
 
-  // 使用XMLHttpRequest获取更详细的错误信息
-  const result = await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${CONFIG.apiBase}/chat/completions`, true);
+  const result = await new Promise(function(resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://open.bigmodel.cn/api/paas/v4/chat/completions', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.setRequestHeader('Authorization', `Bearer ${CONFIG.apiKey}`);
-    xhr.onload = () => {
+    xhr.setRequestHeader('Authorization', 'Bearer ' + CONFIG.apiKey);
+    xhr.onload = function() {
       try {
-        const data = JSON.parse(xhr.responseText);
+        var data = JSON.parse(xhr.responseText);
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(data);
         } else {
-          reject(new Error(data.error?.message || `请求失败 (${xhr.status}): ${xhr.responseText.substring(0, 200)}`));
+          var errMsg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + xhr.status);
+          reject(new Error(errMsg));
         }
-      } catch (e) {
-        reject(new Error(`响应解析失败 (${xhr.status}): ${xhr.responseText.substring(0, 200)}`));
+      } catch(e) {
+        reject(new Error('响应解析失败: ' + xhr.responseText.substring(0, 200)));
       }
     };
-    xhr.onerror = () => reject(new Error('网络请求失败，请检查网络连接'));
-    xhr.ontimeout = () => reject(new Error('请求超时，请稍后重试'));
+    xhr.onerror = function() { reject(new Error('网络请求失败')); };
+    xhr.ontimeout = function() { reject(new Error('请求超时')); };
     xhr.timeout = 60000;
     xhr.send(reqBody);
   });
 
   if (!result.choices || !result.choices[0]) {
-    throw new Error('AI 未返回有效结果，请重试');
+    throw new Error('AI 未返回有效结果');
   }
-  const raw = result.choices[0].message?.content || '';
+  var raw = result.choices[0].message.content || '';
   return parseResults(raw);
 }
 
