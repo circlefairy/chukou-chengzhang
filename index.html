@@ -37,7 +37,6 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
       letter-spacing: 2px;
-      text-shadow: none;
     }
     .header-subtitle {
       font-size: 12px;
@@ -274,6 +273,7 @@
       letter-spacing: 1px;
       position: relative;
       z-index: 1;
+      white-space: pre-line;
     }
     .result-text.classical {
       font-size: 18px;
@@ -386,6 +386,7 @@
       letter-spacing: 2px;
       color: #f5d98b;
       text-align: center;
+      white-space: pre-line;
     }
     .share-hint {
       font-size: 11px;
@@ -408,94 +409,11 @@
       to { opacity: 1; transform: translateY(0); }
     }
     .fade-in { animation: fadeInUp 0.5s ease forwards; }
-
-    /* ===== API Key输入弹窗 ===== */
-    .modal-overlay {
-      display: none;
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(10,10,20,0.88);
-      z-index: 300;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      backdrop-filter: blur(8px);
-    }
-    .modal-overlay.show { display: flex; }
-    .modal-box {
-      background: #12121e;
-      border: 1px solid rgba(201,168,76,0.3);
-      border-radius: 24px;
-      padding: 28px 24px;
-      width: 100%;
-      max-width: 400px;
-      animation: fadeInUp 0.3s ease;
-    }
-    .modal-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #f5d98b;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-    }
-    .modal-desc {
-      font-size: 13px;
-      color: rgba(240,234,214,0.5);
-      margin-bottom: 20px;
-      line-height: 1.7;
-    }
-    .modal-desc a { color: #c9a84c; text-decoration: none; }
-    .modal-input {
-      width: 100%;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(201,168,76,0.25);
-      border-radius: 12px;
-      padding: 13px 14px;
-      color: #f0ead6;
-      font-size: 14px;
-      outline: none;
-      font-family: monospace;
-      margin-bottom: 14px;
-      transition: border-color 0.2s;
-    }
-    .modal-input:focus { border-color: #c9a84c; }
-    .modal-input::placeholder { color: rgba(240,234,214,0.25); font-family: -apple-system, sans-serif; }
-    .modal-btns { display: flex; gap: 10px; }
-    .modal-btn-ok {
-      flex: 1; padding: 13px; border-radius: 12px; border: none;
-      background: linear-gradient(135deg, #c9a84c, #f5d98b);
-      color: #1a1208; font-size: 15px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
-      transition: opacity 0.2s;
-    }
-    .modal-btn-ok:hover { opacity: 0.9; }
-    .modal-btn-demo {
-      flex: 1; padding: 13px; border-radius: 12px;
-      border: 1px solid rgba(201,168,76,0.3);
-      background: transparent; color: #c9a84c; font-size: 15px;
-      cursor: pointer; font-family: inherit; transition: background 0.2s;
-    }
-    .modal-btn-demo:hover { background: rgba(201,168,76,0.1); }
-
-    /* ===== 设置按钮 ===== */
-    .settings-btn {
-      position: fixed; top: 18px; right: 16px;
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.12);
-      border: 1px solid rgba(201,168,76,0.25);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 16px; z-index: 10;
-      transition: background 0.2s;
-    }
-    .settings-btn:hover { background: rgba(201,168,76,0.2); }
   </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
-
-<!-- 顶部设置按钮 -->
-<div class="settings-btn" onclick="openSettings()" title="设置API Key">⚙️</div>
 
 <!-- 主应用 -->
 <div class="app">
@@ -613,29 +531,6 @@
 <!-- 复制成功提示 -->
 <div class="toast" id="toast">✓ 已复制，快去发朋友圈吧！</div>
 
-<!-- API Key 设置弹窗 -->
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal-box">
-    <div class="modal-title">🔑 配置 AI 密钥</div>
-    <div class="modal-desc">
-      请输入你的 OpenAI 或兼容接口 API Key。<br/>
-      Key 仅存储在本设备，不上传至任何服务器。<br/>
-      <a href="https://platform.openai.com/api-keys" target="_blank">→ 获取 OpenAI API Key</a>
-    </div>
-    <input class="modal-input" id="apiKeyInput" type="password"
-      placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
-    <div style="font-size:12px;color:rgba(240,234,214,0.35);margin-bottom:14px;">
-      也可配置自定义接口：
-    </div>
-    <input class="modal-input" id="apiBaseInput" type="text"
-      placeholder="API Base URL（默认: https://api.openai.com/v1）" />
-    <div class="modal-btns">
-      <button class="modal-btn-ok" onclick="saveSettings()">保存并使用</button>
-      <button class="modal-btn-demo" onclick="useDemoMode()">体验演示</button>
-    </div>
-  </div>
-</div>
-
 <script>
 // ============================================================
 // 背景粒子
@@ -685,7 +580,7 @@
 })();
 
 // ============================================================
-// 全局状态
+// 全局状态 & 内置配置
 // ============================================================
 let currentFile = null;
 let currentFileURL = null;
@@ -693,32 +588,13 @@ let currentFileType = null;
 let selectedStyle = 'classical';
 let generatedResults = [];
 let currentResultIdx = 0;
-let demoMode = false;
 
-// ============================================================
-// 设置 / API Key
-// ============================================================
-function openSettings() {
-  document.getElementById('apiKeyInput').value = localStorage.getItem('ck_api_key') || '';
-  document.getElementById('apiBaseInput').value = localStorage.getItem('ck_api_base') || '';
-  document.getElementById('settingsModal').classList.add('show');
-}
-function saveSettings() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  const base = document.getElementById('apiBaseInput').value.trim();
-  if (!key) { showToast('⚠️ 请输入 API Key'); return; }
-  localStorage.setItem('ck_api_key', key);
-  if (base) localStorage.setItem('ck_api_base', base);
-  else localStorage.removeItem('ck_api_base');
-  demoMode = false;
-  document.getElementById('settingsModal').classList.remove('show');
-  showToast('✓ 设置已保存');
-}
-function useDemoMode() {
-  demoMode = true;
-  document.getElementById('settingsModal').classList.remove('show');
-  showToast('✓ 已进入演示模式');
-}
+// 内置智谱 AI 配置（免费，无需用户配置）
+const CONFIG = {
+  apiKey: '80b44cec17eb4500bfbda9b762eca73d.drzGljj3muGSbPOg',
+  apiBase: 'https://open.bigmodel.cn/api/paas/v4',
+  model: 'glm-4v-flash'
+};
 
 // ============================================================
 // 文件上传处理
@@ -746,7 +622,6 @@ function handleFile(file) {
   currentFileURL = URL.createObjectURL(file);
 
   const wrap = document.getElementById('previewWrap');
-  // 清除旧预览（保留关闭按钮）
   const old = wrap.querySelector('img, video');
   if (old) old.remove();
 
@@ -764,7 +639,6 @@ function handleFile(file) {
 
   document.getElementById('previewSection').style.display = 'block';
   document.getElementById('uploadZone').style.display = 'none';
-  // 隐藏旧结果
   document.getElementById('resultSection').classList.remove('show');
 }
 
@@ -787,55 +661,100 @@ function selectStyle(el) {
 }
 
 // ============================================================
-// AI 生成
+// AI 生成（核心提示词，深度关联图片内容）
 // ============================================================
-const styleMap = {
-  classical:  { label: '📜 古风诗词', prompt: '请以中国古典诗词风格，为这张图片/视频写3首不同的七言或五言绝句或词牌（选择最适合的），要求意境悠远、语言典雅、有画面感。每首诗词后附一行现代白话解释。' },
-  modern:     { label: '✨ 现代美文', prompt: '请以现代散文诗风格，为这张图片写3段不同的朋友圈文案，要求文字优美、有情感共鸣、让人觉得有文化有品味，每段控制在50字以内。' },
-  zen:        { label: '🍃 禅意哲思', prompt: '请以禅意哲学风格，为这张图片写3条不同的人生感悟或禅语，要求言简意赅、充满智慧、发人深省，适合朋友圈配图。每条25字以内。' },
-  lyrical:    { label: '🌸 唯美抒情', prompt: '请以唯美抒情风格，为这张图片写3段不同的朋友圈文案，像一首小诗一样，有意象有情绪，语言柔美，让人心动，每段40字以内。' },
-  cool:       { label: '🌌 高冷艺术', prompt: '请以高冷艺术风格，为这张图片写3句不同的短句文案，风格冷峻、有深度、有哲学感，类似于艺术家的自我表达，每句20字以内。' },
-  humorous:   { label: '😏 幽默俏皮', prompt: '请以幽默俏皮风格，为这张图片写3条不同的朋友圈文案，要有创意、有趣、让人忍不住发出会心一笑，每条35字以内。' }
-};
+function buildSystemPrompt() {
+  return `你是一位兼通古今、文采飞扬的文字大师，是朋友圈文案界的顶级高手。
 
-// 演示模式预设文案
-const demoTexts = {
-  classical: [
-    `碧落云深归燕晚，\n一帘春梦付东风。\n山河万里皆入画，\n此景此情几时同。\n\n——此处白云深处，时光如梦。`,
-    `斜阳脉脉照江楼，\n人在天涯思不休。\n莫问浮生多少事，\n且将美景换新愁。\n\n——夕阳余晖，皆是故事。`,
-    `烟霞散尽见青山，\n万籁俱寂心自闲。\n此生若有诗千首，\n愿换眼前一刹间。\n\n——有些美，只属于这一刻。`
-  ],
-  modern: [
-    `光线好的地方，连空气都是柔软的。`,
-    `世界那么大，总要找几个让心安静的地方。`,
-    `不必解释，美的事物自己会说话。`
-  ],
-  zen: [
-    `万物皆有裂缝，那是光进来的地方。`,
-    `静下来，才能听见自己真正想要的声音。`,
-    `不执于此刻，方能拥有每一刻。`
-  ],
-  lyrical: [
-    `愿你出走半生，归来仍是少年。\n此刻的风，吹过了所有的美好。`,
-    `有些风景只适合独自欣赏，\n就像有些心情只有自己懂。`,
-    `光阴像水，我们都在其中漂流，\n而此刻，我愿意停留。`
-  ],
-  cool: [
-    `凝视深渊，深渊也在凝视你。`,
-    `所有的美，都是某种孤独。`,
-    `时间是唯一诚实的艺术家。`
-  ],
-  humorous: [
-    `这张照片太美了，连我自己都想点赞。`,
-    `人生没有滤镜，但我的眼睛有。`,
-    `此处风景美到让我想假装成为艺术家。`
-  ]
+你的核心能力：**仔细观察图片中的每一个细节**（景物、人物、光影、色彩、构图、氛围、情绪），从中提炼出最打动人的元素，然后写出令人叹为观止的诗词文案。
+
+关键要求：
+1. **必须基于图片实际内容创作**，不要写空洞的通用文案
+2. 文案中要体现图片中的具体元素（如：画面中的山、水、花、天空的颜色、光影、季节感等）
+3. 让人看文案就能联想到图片中的画面
+4. 每个版本的风格和角度要不同，给用户充分的选择`;
+}
+
+const styleMap = {
+  classical: {
+    label: '📜 古风诗词',
+    prompt: `以中国古典诗词风格，为这张图片写3首不同的诗词。
+
+要求：
+- 仔细观察图片中的景物（山川、河流、花草、建筑、天空等）、光影、季节、时间等细节
+- 从图片内容中提取意象融入诗词
+- 选择最适合的体裁（七绝、五绝、词牌如浣溪沙/蝶恋花/如梦令等）
+- 意境悠远、语言典雅、有画面感，读来如在画中
+- 每首诗词后用「译」开头附一行白话解释
+
+请将3首分别以「版本一」「版本二」「版本三」开头，用 --- 分隔。`
+  },
+  modern: {
+    label: '✨ 现代美文',
+    prompt: `以现代散文诗风格，为这张图片写3段不同的朋友圈文案。
+
+要求：
+- 描述图片中你看到的画面，将视觉元素转化为优美的文字
+- 结合光影、色彩、构图等细节，写出让人心动的句子
+- 有情感共鸣、有文化品味，适合发朋友圈
+- 每段50字以内，风格各异
+
+请将3段分别以「版本一」「版本二」「版本三」开头，用 --- 分隔。`
+  },
+  zen: {
+    label: '🍃 禅意哲思',
+    prompt: `以禅意哲学风格，为这张图片写3条不同的人生感悟。
+
+要求：
+- 从图片画面中提取一个哲学角度（如：光影的消逝与永恒、自然的静默、空间的留白等）
+- 言简意赅、充满智慧、发人深省
+- 适合朋友圈配图，让人看后有所触动
+- 每条25-40字
+
+请将3条分别以「版本一」「版本二」「版本三」开头，用 --- 分隔。`
+  },
+  lyrical: {
+    label: '🌸 唯美抒情',
+    prompt: `以唯美抒情风格，为这张图片写3段不同的朋友圈文案。
+
+要求：
+- 将图片中的色彩、光影、氛围转化为情感表达
+- 有意象、有情绪，像一首小诗
+- 语言柔美、浪漫、让人心动
+- 结合图片的季节感、时间感、空间感
+- 每段40-60字
+
+请将3段分别以「版本一」「版本二」「版本三」开头，用 --- 分隔。`
+  },
+  cool: {
+    label: '🌌 高冷艺术',
+    prompt: `以高冷艺术风格，为这张图片写3句不同的短句文案。
+
+要求：
+- 从图片的构图、色彩或氛围中提炼一个艺术观念
+- 风格冷峻、有深度、有哲学感，像艺术家的自白
+- 简短有力，适合朋友圈配图
+- 每句15-30字
+
+请将3句分别以「版本一」「版本二」「版本三」开头，用 --- 分隔。`
+  },
+  humorous: {
+    label: '😏 幽默俏皮',
+    prompt: `以幽默俏皮风格，为这张图片写3条不同的朋友圈文案。
+
+要求：
+- 从图片内容中找到一个有趣的切入点（如夸张化某个画面细节、反差感、谐音梗等）
+- 有创意、有梗、让人会心一笑
+- 网感好，适合年轻人在朋友圈发
+- 每条25-45字
+
+请将3条分别以「版本一」「版本二」「版本三」开头，用 --- 分隔。`
+  }
 };
 
 async function generatePoem() {
-  const apiKey = localStorage.getItem('ck_api_key');
-  if (!apiKey && !demoMode) {
-    openSettings();
+  if (!currentFile) {
+    showToast('⚠️ 请先上传一张图片');
     return;
   }
 
@@ -843,56 +762,59 @@ async function generatePoem() {
   showLoading(true);
 
   try {
-    let results;
-    if (demoMode) {
-      await delay(1800);
-      const texts = demoTexts[selectedStyle] || demoTexts.classical;
-      results = texts.map((t, i) => ({ idx: i + 1, text: t, style: selectedStyle }));
-    } else {
-      results = await callAI(apiKey, desc);
-    }
-
+    const results = await callAI(desc);
     generatedResults = results;
     currentResultIdx = 0;
     renderResults();
   } catch (err) {
-    showToast('⚠️ 生成失败：' + (err.message || '请检查 API Key'));
+    showToast('⚠️ 生成失败：' + (err.message || '请稍后重试'));
   } finally {
     showLoading(false);
   }
 }
 
-async function callAI(apiKey, desc) {
-  const apiBase = localStorage.getItem('ck_api_base') || 'https://api.openai.com/v1';
+async function callAI(desc) {
   const styleInfo = styleMap[selectedStyle];
-  const userPrompt = styleInfo.prompt + (desc ? `\n\n补充信息：${desc}` : '') +
-    '\n\n请将3个版本分别以「版本一」「版本二」「版本三」开头，用---分隔。';
+  let userText = styleInfo.prompt;
+  if (desc) {
+    userText += `\n\n用户补充信息：${desc}\n请将用户的补充信息与图片画面结合，在文案中自然融入这些信息。`;
+  }
 
   const messages = [
-    {
-      role: 'system',
-      content: '你是一位兼通古今、文采飞扬的文字大师，擅长根据图片内容写出令人叹为观止的诗词文案。你的文字应该优美、有意境、适合发朋友圈，让人觉得发这条朋友圈的人非常有文化品味。'
-    },
-    {
-      role: 'user',
-      content: currentFile
-        ? [
-            { type: 'text', text: userPrompt },
-            { type: 'image_url', image_url: { url: await fileToBase64(currentFile), detail: 'low' } }
-          ]
-        : userPrompt
-    }
+    { role: 'system', content: buildSystemPrompt() }
   ];
 
-  const res = await fetch(`${apiBase}/chat/completions`, {
+  // 构建用户消息（含图片）
+  const userContent = [];
+  userContent.push({ type: 'text', text: userText });
+
+  if (currentFile && currentFileType === 'image') {
+    const base64 = await fileToBase64(currentFile);
+    userContent.push({
+      type: 'image_url',
+      image_url: { url: base64 }
+    });
+  }
+
+  messages.push({ role: 'user', content: userContent });
+
+  const res = await fetch(`${CONFIG.apiBase}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: 'gpt-4o', messages, max_tokens: 1200, temperature: 0.85 })
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CONFIG.apiKey}`
+    },
+    body: JSON.stringify({
+      model: CONFIG.model,
+      messages: messages,
+      max_tokens: 1500,
+      temperature: 0.9
+    })
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
+    throw new Error(err.error?.message || `请求失败 (${res.status})`);
   }
 
   const data = await res.json();
@@ -901,11 +823,20 @@ async function callAI(apiKey, desc) {
 }
 
 function parseResults(raw) {
-  const parts = raw.split(/---+/).map(s => s.trim()).filter(Boolean);
-  return parts.map((text, i) => ({ idx: i + 1, text, style: selectedStyle }));
+  // 尝试按 --- 或「版本」标记分割
+  let parts = raw.split(/---+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) {
+    // 尝试按「版本X」分割
+    parts = raw.split(/(?=版本[一二三三四五六七八九十])/).map(s => s.trim()).filter(Boolean);
+  }
+  if (parts.length <= 1) {
+    // 整体作为一个结果
+    parts = [raw.trim()];
+  }
+  return parts.map((text, i) => ({ idx: i + 1, text: text.replace(/^版本[一二三四五六七八九十]\s*[:：]?\s*/gm, '').trim(), style: selectedStyle }));
 }
 
-async function fileToBase64(file) {
+function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
@@ -922,7 +853,6 @@ function renderResults() {
   section.classList.add('show');
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // 标签
   const tabs = document.getElementById('resultTabs');
   tabs.innerHTML = '';
   generatedResults.forEach((r, i) => {
@@ -979,7 +909,6 @@ async function regenerate() {
 }
 
 async function generateMore() {
-  // 切换到下一个风格并生成
   const styles = Object.keys(styleMap);
   const next = styles[(styles.indexOf(selectedStyle) + 1) % styles.length];
   selectedStyle = next;
@@ -1024,20 +953,6 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
-
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ============================================================
-// 首次打开，引导配置
-// ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-  const key = localStorage.getItem('ck_api_key');
-  if (!key) {
-    setTimeout(() => {
-      document.getElementById('settingsModal').classList.add('show');
-    }, 600);
-  }
-});
 </script>
 </body>
 </html>
