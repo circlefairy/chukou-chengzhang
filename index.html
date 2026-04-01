@@ -807,7 +807,7 @@ async function callAI(desc) {
     temperature: 0.9
   });
 
-  const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(`${CONFIG.apiBase}/chat/completions`), {
+  const res = await fetch(`${CONFIG.apiBase}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
