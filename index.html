@@ -800,18 +800,20 @@ async function callAI(desc) {
     { role: 'user', content: userContent }
   ];
 
-  const res = await fetch(`${CONFIG.apiBase}/chat/completions`, {
+  const reqBody = JSON.stringify({
+    model: CONFIG.model,
+    messages: messages,
+    max_tokens: 1500,
+    temperature: 0.9
+  });
+
+  const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(`${CONFIG.apiBase}/chat/completions`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${CONFIG.apiKey}`
     },
-    body: JSON.stringify({
-      model: CONFIG.model,
-      messages: messages,
-      max_tokens: 1500,
-      temperature: 0.9
-    })
+    body: reqBody
   });
 
   if (!res.ok) {
