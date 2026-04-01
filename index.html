@@ -780,23 +780,25 @@ async function callAI(desc) {
     userText += `\n\n用户补充信息：${desc}\n请将用户的补充信息与图片画面结合，在文案中自然融入这些信息。`;
   }
 
-  const messages = [
-    { role: 'system', content: buildSystemPrompt() }
-  ];
+  // 智谱 GLM-4V-Flash 不支持 system 角色，合并为 user 消息
+  const systemText = buildSystemPrompt();
+  const fullUserText = systemText + '\n\n' + userText;
 
   // 构建用户消息（含图片）
   const userContent = [];
-  userContent.push({ type: 'text', text: userText });
+  userContent.push({ type: 'text', text: fullUserText });
 
   if (currentFile && currentFileType === 'image') {
-    const base64 = await fileToBase64(currentFile);
+    const base64 = await fileToCompressedBase64(currentFile);
     userContent.push({
       type: 'image_url',
       image_url: { url: base64 }
     });
   }
 
-  messages.push({ role: 'user', content: userContent });
+  const messages = [
+    { role: 'user', content: userContent }
+  ];
 
   const res = await fetch(`${CONFIG.apiBase}/chat/completions`, {
     method: 'POST',
@@ -842,6 +844,30 @@ function fileToBase64(file) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+// 压缩图片为较小尺寸的base64，避免超出API token限制
+function fileToCompressedBase64(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // 限制最大边长为1024px
+      const MAX = 1024;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
   });
 }
 
