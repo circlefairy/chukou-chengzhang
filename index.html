@@ -813,16 +813,18 @@ async function callAI(desc) {
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.setRequestHeader('Authorization', 'Bearer ' + CONFIG.apiKey);
     xhr.onload = function() {
+      var text = xhr.responseText;
+      alert('API返回状态:' + xhr.status + '\n内容:' + text.substring(0, 500));
       try {
-        var data = JSON.parse(xhr.responseText);
+        var data = JSON.parse(text);
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(data);
         } else {
-          var errMsg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + xhr.status);
+          var errMsg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + xhr.status + ': ' + text.substring(0, 200));
           reject(new Error(errMsg));
         }
       } catch(e) {
-        reject(new Error('响应解析失败: ' + xhr.responseText.substring(0, 200)));
+        reject(new Error('响应解析失败: ' + text.substring(0, 200)));
       }
     };
     xhr.onerror = function() { reject(new Error('网络请求失败')); };
