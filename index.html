@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>出口成章 · 妙笔生花</title>
+  <style>
+    /* ===== 基础重置 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; background: #0a0a14; color: #f0ead6; overflow-x: hidden; }
+
+    /* ===== 背景粒子效果 ===== */
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+    /* ===== 主容器 ===== */
+    .app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ===== 顶部标题栏 ===== */
+    .header {
+      text-align: center;
+      padding: 28px 20px 20px;
+      background: linear-gradient(180deg, rgba(10,10,20,0.9) 0%, transparent 100%);
+    }
+    .header-logo {
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: #c9a84c;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      opacity: 0.8;
+    }
+    .header-title {
+      font-size: 30px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f5d98b, #c9a84c, #f5d98b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 2px;
+      text-shadow: none;
+    }
+    .header-subtitle {
+      font-size: 12px;
+      color: rgba(240,234,214,0.45);
+      margin-top: 5px;
+      letter-spacing: 2px;
+    }
+
+    /* ===== 主内容区 ===== */
+    .main { flex: 1; padding: 10px 16px 100px; max-width: 480px; margin: 0 auto; width: 100%; }
+
+    /* ===== 卡片基础样式 ===== */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .card-title {
+      font-size: 12px;
+      color: #c9a84c;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 14px;
+      background: linear-gradient(180deg, #f5d98b, #c9a84c);
+      border-radius: 2px;
+    }
+
+    /* ===== 上传区域 ===== */
+    .upload-zone {
+      border: 1.5px dashed rgba(201,168,76,0.35);
+      border-radius: 16px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      background: rgba(201,168,76,0.03);
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: #c9a84c;
+      background: rgba(201,168,76,0.07);
+      transform: scale(1.01);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer;
+    }
+    .upload-icon { font-size: 40px; margin-bottom: 10px; }
+    .upload-hint { font-size: 14px; color: rgba(240,234,214,0.6); line-height: 1.6; }
+    .upload-hint span { color: #c9a84c; }
+
+    /* ===== 预览区 ===== */
+    .preview-wrap {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 14px;
+    }
+    .preview-wrap img, .preview-wrap video {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      display: block;
+    }
+    .preview-remove {
+      position: absolute; top: 8px; right: 8px;
+      width: 28px; height: 28px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; cursor: pointer; color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: background 0.2s;
+    }
+    .preview-remove:hover { background: rgba(200,50,50,0.7); }
+
+    /* ===== 风格选择 ===== */
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .style-btn {
+      padding: 10px 6px;
+      border-radius: 12px;
+      border: 1px solid rgba(201,168,76,0.2);
+      background: rgba(255,255,255,0.03);
+      color: rgba(240,234,214,0.7);
+      font-size: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      line-height: 1.4;
+    }
+    .style-btn .style-icon { font-size: 20px; display: block; margin-bottom: 3px; }
+    .style-btn:hover { border-color: #c9a84c; color: #f5d98b; background: rgba(201,168,76,0.08); }
+    .style-btn.active {
+      border-color: #c9a84c;
+      background: rgba(201,168,76,0.15);
+      color: #f5d98b;
+      box-shadow: 0 0 12px rgba(201,168,76,0.2);
+    }
+
+    /* ===== 补充描述 ===== */
+    .desc-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #f0ead6;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      transition: border-color 0.25s;
+      font-family: inherit;
+    }
+    .desc-input::placeholder { color: rgba(240,234,214,0.3); }
+    .desc-input:focus { border-color: #c9a84c; }
+
+    /* ===== 生成按钮 ===== */
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #c9a84c, #f5d98b, #c9a84c);
+      background-size: 200% 200%;
+      color: #1a1208;
+      box-shadow: 0 4px 24px rgba(201,168,76,0.35);
+    }
+    .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,0.45); }
+    .btn-generate:active { transform: translateY(0); }
+    .btn-generate.loading { pointer-events: none; opacity: 0.8; }
+    .btn-generate .btn-text { position: relative; z-index: 1; }
+
+    /* ===== 加载动画 ===== */
+    .loading-overlay {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,10,20,0.85);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .loading-overlay.show { display: flex; }
+    .loading-brush {
+      font-size: 50px;
+      animation: brushSpin 1.5s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes brushSpin {
+      0%, 100% { transform: rotate(-15deg) scale(1); }
+      50% { transform: rotate(15deg) scale(1.1); }
+    }
+    .loading-text {
+      font-size: 15px;
+      color: #c9a84c;
+      letter-spacing: 3px;
+    }
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '·'; }
+      60% { content: '··'; }
+      80%, 100% { content: '···'; }
+    }
+
+    /* ===== 结果区 ===== */
+    .result-section { display: none; }
+    .result-section.show { display: block; }
+
+    .result-card {
+      background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(245,217,139,0.05));
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 20px;
+      padding: 22px 20px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .result-card::before {
+      content: '"';
+      position: absolute;
+      top: -10px; left: 14px;
+      font-size: 80px;
+      color: rgba(201,168,76,0.08);
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .result-style-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #c9a84c;
+      letter-spacing: 2px;
+      background: rgba(201,168,76,0.12);
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .result-text {
+      font-size: 16px;
+      line-height: 2;
+      color: #f0ead6;
+      letter-spacing: 1px;
+      position: relative;
+      z-index: 1;
+    }
+    .result-text.classical {
+      font-size: 18px;
+      text-align: center;
+      line-height: 2.2;
+      letter-spacing: 3px;
+    }
+
+    /* ===== 操作按钮组 ===== */
+    .action-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn-copy, .btn-regen, .btn-more {
+      padding: 13px;
+      border-radius: 14px;
+      border: 1px solid rgba(201,168,76,0.3);
+      background: rgba(255,255,255,0.04);
+      color: #f0ead6;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.25s;
+      font-family: inherit;
+    }
+    .btn-copy:hover { background: rgba(201,168,76,0.15); border-color: #c9a84c; color: #f5d98b; }
+    .btn-regen:hover { background: rgba(255,255,255,0.08); border-color: rgba(201,168,76,0.5); }
+    .btn-more { grid-column: span 2; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(245,217,139,0.08)); border-color: rgba(201,168,76,0.35); }
+    .btn-more:hover { background: rgba(201,168,76,0.22); }
+
+    /* ===== 复制成功提示 ===== */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(201,168,76,0.9);
+      color: #1a1208;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ===== 多组结果切换 ===== */
+    .result-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .result-tabs::-webkit-scrollbar { display: none; }
+    .result-tab {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(201,168,76,0.2);
+      background: rgba(255,255,255,0.03);
+      color: rgba(240,234,214,0.5);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .result-tab.active {
+      background: rgba(201,168,76,0.15);
+      border-color: #c9a84c;
+      color: #f5d98b;
+    }
+
+    /* ===== 底部装饰 ===== */
+    .footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(0deg, rgba(10,10,20,0.95) 70%, transparent);
+      padding: 12px 0 20px;
+      text-align: center;
+      font-size: 11px;
+      color: rgba(240,234,214,0.2);
+      letter-spacing: 2px;
+      pointer-events: none;
+    }
+
+    /* ===== 图片叠加文字效果 ===== */
+    .poem-overlay-wrap {
+      position: relative;
+      display: none;
+    }
+    .poem-overlay-wrap.show { display: block; }
+    .poem-overlay-wrap img {
+      width: 100%;
+      border-radius: 14px;
+      display: block;
+    }
+    .poem-overlay-text {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(0deg, rgba(10,10,20,0.85) 0%, transparent 100%);
+      padding: 30px 20px 20px;
+      border-radius: 0 0 14px 14px;
+      font-size: 15px;
+      line-height: 2;
+      letter-spacing: 2px;
+      color: #f5d98b;
+      text-align: center;
+    }
+    .share-hint {
+      font-size: 11px;
+      color: rgba(240,234,214,0.35);
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+
+    /* ===== 分割线 ===== */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent);
+      margin: 4px 0 16px;
+    }
+
+    /* ===== 响应动画 ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.5s ease forwards; }
+
+    /* ===== API Key输入弹窗 ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,10,20,0.88);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: #12121e;
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 24px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 400px;
+      animation: fadeInUp 0.3s ease;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f5d98b;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .modal-desc {
+      font-size: 13px;
+      color: rgba(240,234,214,0.5);
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+    .modal-desc a { color: #c9a84c; text-decoration: none; }
+    .modal-input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 12px;
+      padding: 13px 14px;
+      color: #f0ead6;
+      font-size: 14px;
+      outline: none;
+      font-family: monospace;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: #c9a84c; }
+    .modal-input::placeholder { color: rgba(240,234,214,0.25); font-family: -apple-system, sans-serif; }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btn-ok {
+      flex: 1; padding: 13px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #c9a84c, #f5d98b);
+      color: #1a1208; font-size: 15px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: opacity 0.2s;
+    }
+    .modal-btn-ok:hover { opacity: 0.9; }
+    .modal-btn-demo {
+      flex: 1; padding: 13px; border-radius: 12px;
+      border: 1px solid rgba(201,168,76,0.3);
+      background: transparent; color: #c9a84c; font-size: 15px;
+      cursor: pointer; font-family: inherit; transition: background 0.2s;
+    }
+    .modal-btn-demo:hover { background: rgba(201,168,76,0.1); }
+
+    /* ===== 设置按钮 ===== */
+    .settings-btn {
+      position: fixed; top: 18px; right: 16px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(201,168,76,0.12);
+      border: 1px solid rgba(201,168,76,0.25);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; z-index: 10;
+      transition: background 0.2s;
+    }
+    .settings-btn:hover { background: rgba(201,168,76,0.2); }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- 顶部设置按钮 -->
+<div class="settings-btn" onclick="openSettings()" title="设置API Key">⚙️</div>
+
+<!-- 主应用 -->
+<div class="app">
+  <!-- 标题 -->
+  <div class="header">
+    <div class="header-logo">✦ ELOQUENT ✦</div>
+    <div class="header-title">出口成章</div>
+    <div class="header-subtitle">上传图片 · 妙笔生花 · 惊艳朋友圈</div>
+  </div>
+
+  <div class="main">
+    <!-- 上传卡片 -->
+    <div class="card" id="upload-card">
+      <div class="card-title">上传素材</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="image/*,video/*" />
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-hint">
+          点击选择 <span>图片 / 视频</span><br/>
+          支持 JPG · PNG · GIF · MP4
+        </div>
+      </div>
+    </div>
+
+    <!-- 预览（有文件时显示）-->
+    <div id="previewSection" style="display:none;">
+      <div class="card">
+        <div class="card-title">素材预览</div>
+        <div class="preview-wrap" id="previewWrap">
+          <div class="preview-remove" onclick="removeFile()">✕</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 风格选择 -->
+    <div class="card">
+      <div class="card-title">文案风格</div>
+      <div class="style-grid">
+        <div class="style-btn active" data-style="classical" onclick="selectStyle(this)">
+          <span class="style-icon">📜</span>古风诗词
+        </div>
+        <div class="style-btn" data-style="modern" onclick="selectStyle(this)">
+          <span class="style-icon">✨</span>现代美文
+        </div>
+        <div class="style-btn" data-style="zen" onclick="selectStyle(this)">
+          <span class="style-icon">🍃</span>禅意哲思
+        </div>
+        <div class="style-btn" data-style="lyrical" onclick="selectStyle(this)">
+          <span class="style-icon">🌸</span>唯美抒情
+        </div>
+        <div class="style-btn" data-style="cool" onclick="selectStyle(this)">
+          <span class="style-icon">🌌</span>高冷艺术
+        </div>
+        <div class="style-btn" data-style="humorous" onclick="selectStyle(this)">
+          <span class="style-icon">😏</span>幽默俏皮
+        </div>
+      </div>
+    </div>
+
+    <!-- 补充描述 -->
+    <div class="card">
+      <div class="card-title">补充描述（可选）</div>
+      <textarea class="desc-input" id="descInput" rows="3"
+        placeholder="可以补充场景信息，如：傍晚的西湖边、和闺蜜出游、第一次出国旅行……"></textarea>
+    </div>
+
+    <!-- 生成按钮 -->
+    <button class="btn-generate" id="btnGenerate" onclick="generatePoem()">
+      <span class="btn-text">✦ 出口成章 · 妙笔生花 ✦</span>
+    </button>
+
+    <!-- 结果区域 -->
+    <div class="result-section" id="resultSection">
+      <div class="divider"></div>
+
+      <div class="card-title" style="margin-bottom:12px;">✨ 已为你生成</div>
+
+      <!-- 结果标签切换 -->
+      <div class="result-tabs" id="resultTabs"></div>
+
+      <!-- 当前结果 -->
+      <div class="result-card fade-in" id="resultCard">
+        <div class="result-style-tag" id="resultStyleTag"></div>
+        <div class="result-text" id="resultText"></div>
+      </div>
+
+      <!-- 图文叠加效果（仅图片） -->
+      <div class="poem-overlay-wrap" id="overlayWrap">
+        <img id="overlayImg" src="" alt=""/>
+        <div class="poem-overlay-text" id="overlayText"></div>
+      </div>
+      <div class="share-hint" id="shareHint" style="display:none;">⬆ 长按图片保存，直接发朋友圈</div>
+
+      <!-- 操作按钮 -->
+      <div class="action-btns">
+        <button class="btn-copy" onclick="copyText()">📋 一键复制</button>
+        <button class="btn-regen" onclick="regenerate()">🔄 换一批</button>
+        <button class="btn-more" onclick="generateMore()">✦ 生成更多风格版本</button>
+      </div>
+    </div>
+
+    <div style="height: 30px;"></div>
+  </div>
+</div>
+
+<!-- 底部版权 -->
+<div class="footer">出口成章 · 让每张图片都有灵魂</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-brush">🖌️</div>
+  <div class="loading-text">妙笔生花中<span class="loading-dots"></span></div>
+</div>
+
+<!-- 复制成功提示 -->
+<div class="toast" id="toast">✓ 已复制，快去发朋友圈吧！</div>
+
+<!-- API Key 设置弹窗 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-title">🔑 配置 AI 密钥</div>
+    <div class="modal-desc">
+      请输入你的 OpenAI 或兼容接口 API Key。<br/>
+      Key 仅存储在本设备，不上传至任何服务器。<br/>
+      <a href="https://platform.openai.com/api-keys" target="_blank">→ 获取 OpenAI API Key</a>
+    </div>
+    <input class="modal-input" id="apiKeyInput" type="password"
+      placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+    <div style="font-size:12px;color:rgba(240,234,214,0.35);margin-bottom:14px;">
+      也可配置自定义接口：
+    </div>
+    <input class="modal-input" id="apiBaseInput" type="text"
+      placeholder="API Base URL（默认: https://api.openai.com/v1）" />
+    <div class="modal-btns">
+      <button class="modal-btn-ok" onclick="saveSettings()">保存并使用</button>
+      <button class="modal-btn-demo" onclick="useDemoMode()">体验演示</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 背景粒子
+// ============================================================
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function createParticles() {
+    particles = [];
+    const count = Math.floor(W * H / 15000);
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.5 + 0.3,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        alpha: Math.random() * 0.5 + 0.1
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(201,168,76,${p.alpha})`;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize(); createParticles(); draw();
+  window.addEventListener('resize', () => { resize(); createParticles(); });
+})();
+
+// ============================================================
+// 全局状态
+// ============================================================
+let currentFile = null;
+let currentFileURL = null;
+let currentFileType = null;
+let selectedStyle = 'classical';
+let generatedResults = [];
+let currentResultIdx = 0;
+let demoMode = false;
+
+// ============================================================
+// 设置 / API Key
+// ============================================================
+function openSettings() {
+  document.getElementById('apiKeyInput').value = localStorage.getItem('ck_api_key') || '';
+  document.getElementById('apiBaseInput').value = localStorage.getItem('ck_api_base') || '';
+  document.getElementById('settingsModal').classList.add('show');
+}
+function saveSettings() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const base = document.getElementById('apiBaseInput').value.trim();
+  if (!key) { showToast('⚠️ 请输入 API Key'); return; }
+  localStorage.setItem('ck_api_key', key);
+  if (base) localStorage.setItem('ck_api_base', base);
+  else localStorage.removeItem('ck_api_base');
+  demoMode = false;
+  document.getElementById('settingsModal').classList.remove('show');
+  showToast('✓ 设置已保存');
+}
+function useDemoMode() {
+  demoMode = true;
+  document.getElementById('settingsModal').classList.remove('show');
+  showToast('✓ 已进入演示模式');
+}
+
+// ============================================================
+// 文件上传处理
+// ============================================================
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+
+fileInput.addEventListener('change', function() {
+  if (this.files && this.files[0]) handleFile(this.files[0]);
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+function handleFile(file) {
+  currentFile = file;
+  currentFileType = file.type.startsWith('video') ? 'video' : 'image';
+  if (currentFileURL) URL.revokeObjectURL(currentFileURL);
+  currentFileURL = URL.createObjectURL(file);
+
+  const wrap = document.getElementById('previewWrap');
+  // 清除旧预览（保留关闭按钮）
+  const old = wrap.querySelector('img, video');
+  if (old) old.remove();
+
+  if (currentFileType === 'image') {
+    const img = document.createElement('img');
+    img.src = currentFileURL;
+    wrap.appendChild(img);
+  } else {
+    const vid = document.createElement('video');
+    vid.src = currentFileURL;
+    vid.controls = true;
+    vid.playsInline = true;
+    wrap.appendChild(vid);
+  }
+
+  document.getElementById('previewSection').style.display = 'block';
+  document.getElementById('uploadZone').style.display = 'none';
+  // 隐藏旧结果
+  document.getElementById('resultSection').classList.remove('show');
+}
+
+function removeFile() {
+  currentFile = null;
+  if (currentFileURL) { URL.revokeObjectURL(currentFileURL); currentFileURL = null; }
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('resultSection').classList.remove('show');
+  fileInput.value = '';
+}
+
+// ============================================================
+// 风格选择
+// ============================================================
+function selectStyle(el) {
+  document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedStyle = el.dataset.style;
+}
+
+// ============================================================
+// AI 生成
+// ============================================================
+const styleMap = {
+  classical:  { label: '📜 古风诗词', prompt: '请以中国古典诗词风格，为这张图片/视频写3首不同的七言或五言绝句或词牌（选择最适合的），要求意境悠远、语言典雅、有画面感。每首诗词后附一行现代白话解释。' },
+  modern:     { label: '✨ 现代美文', prompt: '请以现代散文诗风格，为这张图片写3段不同的朋友圈文案，要求文字优美、有情感共鸣、让人觉得有文化有品味，每段控制在50字以内。' },
+  zen:        { label: '🍃 禅意哲思', prompt: '请以禅意哲学风格，为这张图片写3条不同的人生感悟或禅语，要求言简意赅、充满智慧、发人深省，适合朋友圈配图。每条25字以内。' },
+  lyrical:    { label: '🌸 唯美抒情', prompt: '请以唯美抒情风格，为这张图片写3段不同的朋友圈文案，像一首小诗一样，有意象有情绪，语言柔美，让人心动，每段40字以内。' },
+  cool:       { label: '🌌 高冷艺术', prompt: '请以高冷艺术风格，为这张图片写3句不同的短句文案，风格冷峻、有深度、有哲学感，类似于艺术家的自我表达，每句20字以内。' },
+  humorous:   { label: '😏 幽默俏皮', prompt: '请以幽默俏皮风格，为这张图片写3条不同的朋友圈文案，要有创意、有趣、让人忍不住发出会心一笑，每条35字以内。' }
+};
+
+// 演示模式预设文案
+const demoTexts = {
+  classical: [
+    `碧落云深归燕晚，\n一帘春梦付东风。\n山河万里皆入画，\n此景此情几时同。\n\n——此处白云深处，时光如梦。`,
+    `斜阳脉脉照江楼，\n人在天涯思不休。\n莫问浮生多少事，\n且将美景换新愁。\n\n——夕阳余晖，皆是故事。`,
+    `烟霞散尽见青山，\n万籁俱寂心自闲。\n此生若有诗千首，\n愿换眼前一刹间。\n\n——有些美，只属于这一刻。`
+  ],
+  modern: [
+    `光线好的地方，连空气都是柔软的。`,
+    `世界那么大，总要找几个让心安静的地方。`,
+    `不必解释，美的事物自己会说话。`
+  ],
+  zen: [
+    `万物皆有裂缝，那是光进来的地方。`,
+    `静下来，才能听见自己真正想要的声音。`,
+    `不执于此刻，方能拥有每一刻。`
+  ],
+  lyrical: [
+    `愿你出走半生，归来仍是少年。\n此刻的风，吹过了所有的美好。`,
+    `有些风景只适合独自欣赏，\n就像有些心情只有自己懂。`,
+    `光阴像水，我们都在其中漂流，\n而此刻，我愿意停留。`
+  ],
+  cool: [
+    `凝视深渊，深渊也在凝视你。`,
+    `所有的美，都是某种孤独。`,
+    `时间是唯一诚实的艺术家。`
+  ],
+  humorous: [
+    `这张照片太美了，连我自己都想点赞。`,
+    `人生没有滤镜，但我的眼睛有。`,
+    `此处风景美到让我想假装成为艺术家。`
+  ]
+};
+
+async function generatePoem() {
+  const apiKey = localStorage.getItem('ck_api_key');
+  if (!apiKey && !demoMode) {
+    openSettings();
+    return;
+  }
+
+  const desc = document.getElementById('descInput').value.trim();
+  showLoading(true);
+
+  try {
+    let results;
+    if (demoMode) {
+      await delay(1800);
+      const texts = demoTexts[selectedStyle] || demoTexts.classical;
+      results = texts.map((t, i) => ({ idx: i + 1, text: t, style: selectedStyle }));
+    } else {
+      results = await callAI(apiKey, desc);
+    }
+
+    generatedResults = results;
+    currentResultIdx = 0;
+    renderResults();
+  } catch (err) {
+    showToast('⚠️ 生成失败：' + (err.message || '请检查 API Key'));
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function callAI(apiKey, desc) {
+  const apiBase = localStorage.getItem('ck_api_base') || 'https://api.openai.com/v1';
+  const styleInfo = styleMap[selectedStyle];
+  const userPrompt = styleInfo.prompt + (desc ? `\n\n补充信息：${desc}` : '') +
+    '\n\n请将3个版本分别以「版本一」「版本二」「版本三」开头，用---分隔。';
+
+  const messages = [
+    {
+      role: 'system',
+      content: '你是一位兼通古今、文采飞扬的文字大师，擅长根据图片内容写出令人叹为观止的诗词文案。你的文字应该优美、有意境、适合发朋友圈，让人觉得发这条朋友圈的人非常有文化品味。'
+    },
+    {
+      role: 'user',
+      content: currentFile
+        ? [
+            { type: 'text', text: userPrompt },
+            { type: 'image_url', image_url: { url: await fileToBase64(currentFile), detail: 'low' } }
+          ]
+        : userPrompt
+    }
+  ];
+
+  const res = await fetch(`${apiBase}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'gpt-4o', messages, max_tokens: 1200, temperature: 0.85 })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content || '';
+  return parseResults(raw);
+}
+
+function parseResults(raw) {
+  const parts = raw.split(/---+/).map(s => s.trim()).filter(Boolean);
+  return parts.map((text, i) => ({ idx: i + 1, text, style: selectedStyle }));
+}
+
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ============================================================
+// 渲染结果
+// ============================================================
+function renderResults() {
+  const section = document.getElementById('resultSection');
+  section.classList.add('show');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // 标签
+  const tabs = document.getElementById('resultTabs');
+  tabs.innerHTML = '';
+  generatedResults.forEach((r, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'result-tab' + (i === currentResultIdx ? ' active' : '');
+    tab.textContent = `版本 ${i + 1}`;
+    tab.onclick = () => switchResult(i);
+    tabs.appendChild(tab);
+  });
+
+  showResult(currentResultIdx);
+}
+
+function showResult(idx) {
+  const r = generatedResults[idx];
+  if (!r) return;
+
+  const card = document.getElementById('resultCard');
+  const styleInfo = styleMap[r.style] || styleMap.classical;
+
+  document.getElementById('resultStyleTag').textContent = styleInfo.label;
+  const textEl = document.getElementById('resultText');
+  textEl.className = 'result-text' + (r.style === 'classical' ? ' classical' : '');
+  textEl.textContent = r.text;
+
+  card.classList.remove('fade-in');
+  void card.offsetWidth;
+  card.classList.add('fade-in');
+
+  // 图文叠加
+  const overlayWrap = document.getElementById('overlayWrap');
+  const shareHint = document.getElementById('shareHint');
+  if (currentFile && currentFileType === 'image') {
+    document.getElementById('overlayImg').src = currentFileURL;
+    document.getElementById('overlayText').textContent = r.text;
+    overlayWrap.classList.add('show');
+    shareHint.style.display = 'block';
+  } else {
+    overlayWrap.classList.remove('show');
+    shareHint.style.display = 'none';
+  }
+}
+
+function switchResult(idx) {
+  currentResultIdx = idx;
+  document.querySelectorAll('.result-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+  showResult(idx);
+}
+
+async function regenerate() {
+  await generatePoem();
+}
+
+async function generateMore() {
+  // 切换到下一个风格并生成
+  const styles = Object.keys(styleMap);
+  const next = styles[(styles.indexOf(selectedStyle) + 1) % styles.length];
+  selectedStyle = next;
+  document.querySelectorAll('.style-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.style === next);
+  });
+  await generatePoem();
+}
+
+// ============================================================
+// 复制
+// ============================================================
+function copyText() {
+  const r = generatedResults[currentResultIdx];
+  if (!r) return;
+  const text = r.text;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('✓ 已复制，快去发朋友圈吧！'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✓ 已复制，快去发朋友圈吧！');
+  }
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('show', show);
+  document.getElementById('btnGenerate').classList.toggle('loading', show);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ============================================================
+// 首次打开，引导配置
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  const key = localStorage.getItem('ck_api_key');
+  if (!key) {
+    setTimeout(() => {
+      document.getElementById('settingsModal').classList.add('show');
+    }, 600);
+  }
+});
+</script>
+</body>
+</html>
